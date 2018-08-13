@@ -8,6 +8,8 @@ export default class Counter extends PureComponent {
   static propTypes = {
     count: PropTypes.number.isRequired,
     limit: PropTypes.number,
+    lineLimit: PropTypes.number,
+    label: PropTypes.string,
 
     fontSize: PropTypes.number,
 
@@ -18,21 +20,23 @@ export default class Counter extends PureComponent {
   };
 
   render() {
-    let { count, limit, baseColor, errorColor, fontSize, style } = this.props;
+    let { count, limit, lineLimit, label, baseColor, errorColor, fontSize, style } = this.props;
+
+    if (lineLimit>0) limit=lineLimit;
 
     let textStyle = {
       color: count > limit? errorColor : baseColor,
-      fontSize,
+      fontWeight: count >= limit ? 'bold' : 'normal',
     };
 
-    if (!limit) {
+    if (!limit && !lineLimit) {
       return null;
     }
 
     return (
       <View style={styles.container}>
         <Text style={[styles.text, style, textStyle]}>
-          {count} / {limit}
+          {count} / {limit} {label}
         </Text>
       </View>
     );

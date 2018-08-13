@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 
 import RN from 'react-native/package.json';
+import wrap from 'word-wrap';
 
 import Line from '../line';
 import Label from '../label';
@@ -75,6 +76,9 @@ export default class TextField extends PureComponent {
     title: PropTypes.string,
 
     characterRestriction: PropTypes.number,
+    textlineRestriction: PropTypes.number,
+    textlineLength: PropTypes.number,
+    restrictionLabel: PropTypes.string,
 
     error: PropTypes.string,
     errorColor: PropTypes.string,
@@ -209,6 +213,21 @@ export default class TextField extends PureComponent {
     return characterRestriction < text.length;
   }
 
+  isLineRestricted() {
+    let { textlineRestriction } = this.props;
+    return textlineRestriction < this.lineCount();
+  }
+  
+  lineCount(pText) {
+    let { textlineLength = 80 } = this.props;
+    let { text = '' } = this.state;
+    if (typeof pText !== 'undefined' && pText.length > 0) {
+      text = pText;
+    }
+    let wrappedText = wrap(text, {width: textlineLength});
+    return (wrappedText.match(/\n/g) || []).length + 1;
+  }
+  
   onFocus(event) {
     let { onFocus, clearTextOnFocus } = this.props;
 
@@ -250,12 +269,11 @@ export default class TextField extends PureComponent {
 
   onChangeText(text) {
     let { onChangeText } = this.props;
-
-    this.setState({ text });
-
-    if ('function' === typeof onChangeText) {
-      onChangeText(text);
-    }
+    this.setState({ text }, () => {
+      if ('function' === typeof onChangeText) {
+        onChangeText(text);
+      }  
+    });
   }
 
   onContentSizeChange(event) {
@@ -330,6 +348,8 @@ export default class TextField extends PureComponent {
       value,
       defaultValue,
       characterRestriction: limit,
+      textlineRestriction,
+      restrictionLabel,
       editable,
       disabled,
       disabledLineType,
@@ -369,6 +389,11 @@ export default class TextField extends PureComponent {
     let active = !!(value || props.placeholder);
     let count = value.length;
     let restricted = limit < count;
+    
+    if (textlineRestriction > 0) {
+      count = this.lineCount();
+      restricted = this.isLineRestricted();
+    }
 
     let textAlign = I18nManager.isRTL?
       'right':
@@ -450,7 +475,7 @@ export default class TextField extends PureComponent {
 
     let helperContainerStyle = {
       flexDirection: 'row',
-      height: (title || limit)?
+      height: (title || limit || textlineRestriction)?
         titleFontSize * 2:
         focus.interpolate({
           inputRange:  [-1, 0, 1],
@@ -502,6 +527,8 @@ export default class TextField extends PureComponent {
       errorColor,
       count,
       limit,
+      lineLimit: textlineRestriction,
+      label: restrictionLabel,
       fontSize: titleFontSize,
       style: titleTextStyle,
     };
